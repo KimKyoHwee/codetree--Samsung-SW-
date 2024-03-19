@@ -24,20 +24,21 @@ vector<pair<int, int>> order;  //first : 기사 id second : 이동방향
 int result=0;
 //전역변수 종료
 
-bool simulation(int knightNum, int direction){
+bool simulation(int knightNum, int direction, int aa){
     for(int i=1;i<=N;i++){  //기사들의 이번턴 변수 초기화
         knightV[i].damage=0;
         knightV[i].isMove=false;
     }
     Knight nowKnight=knightV[knightNum];
-    nowKnight.isMove=true;  //첫기사는 움직인거 처리 미리해줌
+    knightV[nowKnight.knightNum].isMove=true;  //첫기사는 움직인거 처리 미리해줌
+    nowKnight.isMove=true;
     queue<Knight> q;
     q.push(nowKnight);
     while(!q.empty()){
         nowKnight=q.front(); q.pop(); //한놈씩 뽑아서
         nowKnight.r+=moveY[direction];
         nowKnight.c+=moveX[direction];
-        if(nowKnight.r<1||nowKnight.r+nowKnight.h>=L||nowKnight.c<1||nowKnight.c+nowKnight.w>=L)
+        if(nowKnight.r<1||nowKnight.r+nowKnight.h-1>L||nowKnight.c<1||nowKnight.c+nowKnight.w-1>L)
             return false;
         //기사가 체스판 밖으로 나감
         for(int i=nowKnight.r;i<nowKnight.r+nowKnight.h;i++){  //기사의 방패 범위 돌아보기
@@ -46,12 +47,13 @@ bool simulation(int knightNum, int direction){
                 if(chess[i][j]==1){
                     //기사가 폭탄 밟으면
                     knightV[nowKnight.knightNum].damage++;
+                    //cout<<aa<<"번명령: "<<nowKnight.knightNum<<"번기사 폭탄밟음"<<i<<", "<<j<<"에서\n";
                 }
             }
         }
         for(int i=1;i<=N;i++){
-            if(knightV[i].r<nowKnight.r||knightV[i].r>=nowKnight.r+nowKnight.h) continue;
-            if(knightV[i].c<nowKnight.c||knightV[i].c>=nowKnight.c+nowKnight.w) continue;
+            if(knightV[i].r>nowKnight.r+nowKnight.h-1||knightV[i].r+knightV[i].h-1<nowKnight.r) continue;
+            if(knightV[i].c>nowKnight.c+nowKnight.w-1||knightV[i].c+knightV[i].w-1<nowKnight.c) continue;
             if(knightV[i].isMove||knightV[i].k<=0) continue;            
             knightV[i].isMove=true;
             q.push(knightV[i]);
@@ -60,10 +62,11 @@ bool simulation(int knightNum, int direction){
     return true;
 }
 
-void getOrder(int knightNum, int direction){  //첫 명령 수행 함수
+void getOrder(int knightNum, int direction, int aa){  //첫 명령 수행 함수
     Knight knight=knightV[knightNum];
     if(knight.k<=0) return;  //현재 기사 죽었으면 수행 X
-    if(simulation(knightNum, direction)){  //현재 기사 포함 연결된 전체 기사 움직일 수 있으면
+    if(simulation(knightNum, direction, aa)){  //현재 기사 포함 연결된 전체 기사 움직일 수 있으면
+        //cout<<aa<<"번째 명령 수행성공\n";
         for(int i=1;i<=N;i++){  
             if(knightV[i].isMove){    //이번턴에 움직인 기사들 정산  
                 if(i!=knightNum){  //첫기사 예외처리
@@ -72,7 +75,6 @@ void getOrder(int knightNum, int direction){  //첫 명령 수행 함수
                 }
                 knightV[i].r+=moveY[direction];
                 knightV[i].c+=moveX[direction];
-                knightNum=i;
             }
         }
     }
@@ -85,18 +87,19 @@ int main() {
             cin>>chess[i][j];
         }
     }
-    Knight addKnight;
-    knightV.push_back(addKnight); //0번기사 넣어두기
-    for(int i=0;i<N;i++){ //기사정보 초기화
+    Knight trashKnight;
+    knightV.push_back(trashKnight); //0번기사 넣어두기
+    for(int i=1;i<=N;i++){ //기사정보 초기화
+        Knight addKnight;
         cin>>addKnight.r>>addKnight.c>>addKnight.h>>addKnight.w>>addKnight.k;
+        addKnight.knightNum=i;
+        knightV.push_back(addKnight);
     } 
-    pair<int, int> addOrder;
-    for(int i=0;i<Q;i++) {  //명령 초기화
-        cin>>addOrder.first>>addOrder.second;
-        order.push_back(addOrder);
+    for(int i=0;i<Q;i++) {  //명령 수행
+        int a,b;
+        cin>>a>>b;
+        getOrder(a,b,i+1);
     }
-
-    for(int i=0;i<Q;i++) getOrder(order[i].first, order[i].second);
     for(int i=1;i<=N;i++){
         if(knightV[i].k>0) {
             result+=knightV[i].damageSum;
