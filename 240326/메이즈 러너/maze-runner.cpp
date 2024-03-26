@@ -50,6 +50,7 @@ void moveAllRunners() {
 				runnerX[i] = nx;
 				if (ny == exitY && nx == exitX) escape[i] = true;
 				break;
+				
 			}
 
 		}
@@ -105,10 +106,24 @@ void rotate() {
 	memmove(board, copyBoard, sizeof(board));
 }
 void startTurn() {
+	/*
+	for (int i = 1; i <= N; i++) {
+		for (int j = 1; j <= N; j++) cout << board[i][j]<<" ";
+		cout << "\n";
+	}
+	*/
 	calculateAllRunnersDistance();
+	//for (int i = 1; i <= M; i++) cout << runnerY[i] << ", " << runnerX[i] << "와 ";
+	//cout << "\n";
 	moveAllRunners();
+	if (allRunnerEscape()) return;
+	//for (int i = 1; i <= M; i++) cout << runnerY[i] << ", " << runnerX[i] << "와 ";
+	//cout << "\n";
 	getRectangle();
+	//cout << "R: " << R << "C: " << C << "변의길이 : " << rectangleN << "\n";
 	rotate();
+	//cout << "출구 위치 : " << exitY << ", " << exitX << "\n";
+	//cout << "턴종료직전\n";
 }
 int main() {
 	cin >> N >> M >> K;
@@ -124,8 +139,9 @@ int main() {
 	board[exitY][exitX] = -1;
 	for (int i = 1; i <= K; i++) {  //턴 진행
 		if (allRunnerEscape()) break;
+		//cout << i << "턴 시작\n";
 		startTurn();
 	}
-	cout << result<<"\n"<< exitY <<" " << exitX;
+	cout << result << "\n" << exitY << " " << exitX;
 	return 0;
 }
