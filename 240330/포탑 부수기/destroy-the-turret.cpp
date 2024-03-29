@@ -2,6 +2,7 @@
 #include <utility>
 #include <queue>
 #include <vector>
+#include <algorithm>
 using namespace std;
 //전역변수 선언
 int N, M, K;
@@ -19,6 +20,10 @@ int backX[11][11]; //역추적
 int backY[11][11]; //역추적
 bool visited[11][11];
 bool attacked[11][11]; //이번턴에 공격과 연관이 있는지
+struct Turret {
+    int y, x, power, sum;
+};
+vector<Turret> tV;
 
 bool checkAliveMan() {
     int cnt = 0;
@@ -30,151 +35,14 @@ bool checkAliveMan() {
     return cnt ==1;
 }
 
-void chooseAttacker(int turn) { //공격자 선택 (공격력 가장 낮은 포탑)
-    int minStat = 2100000000;
-    bool flag = false; //minStat 최신화 될때마다 false로 리셋, 같은 공격력을 가지는 포탑이 있는지 체크
-    for (int i = 1; i <= N; i++) { //일단 최고 공격력만 체크(겹치는거 있는지랑)
-        for (int j = 1; j <= M; j++) {
-            if (board[i][j] == 0) continue; //죽은 포탑은 건너뛰기
-            if (minStat == board[i][j]) flag = true;
-            else if (minStat > board[i][j]) {
-                minStat = board[i][j];
-                flag = false;
-                attacker.first = i; attacker.second = j;
-            }
-        }
-    }
-    if (flag) {  //공격력이 겹치는 포탑이 있는 경우
-        vector<pair<int, int>> vec;  //공격력 겹치는 포탑들 좌표 벡터
-        for (int i = 1; i <= N; i++) {  //공격력 겹치는 포탑들 벡터에 넣고
-            for (int j = 1; j <= M; j++) {
-                if (board[i][j] == 0) continue; //죽은 포탑은 건너뛰기
-                if (minStat == board[i][j]) vec.push_back({ i,j });
-            }
-        }
-        int minAttackTurn = 0;  //가장 최근에 공격한거 찾아야 하므로 공격한 턴이 가장 큰거 찾아야함
-        bool flag2 = false; //maxAttackTurn 같은거 있으면 true
-        for (int i = 0; i < vec.size(); i++) {
-            if (lastAttack[vec[i].first][vec[i].second] == minAttackTurn) {
-                flag2 = true;
-            }
-            else if (lastAttack[vec[i].first][vec[i].second] > minAttackTurn) {  //가장 최근에 공격한 포탑을 공격자로 선정
-                minAttackTurn = lastAttack[vec[i].first][vec[i].second];
-                flag2 = false;
-                attacker.first = vec[i].first;
-                attacker.second = vec[i].second;
-            }
-        }
-        if (flag2) {  //가장 최근에 공격한 포탑이 겹친다면
-            vector<pair<int, int>> vec2;
-            for (int i = 0; i < vec.size(); i++) { //겹치는 포탑들 좌표 vec2에 넣고
-                if (minAttackTurn == lastAttack[vec[i].first][vec[i].second]) vec2.push_back({ vec[i].first, vec[i].second });
-            }
-            vec.clear();
-            int maxRowColSum = 0;
-            bool flag3 = false;
-            for (int i = 0; i < vec2.size(); i++) {
-                if (rowColSum[vec2[i].first][vec2[i].second] == maxRowColSum) flag3 = true;
-                else if (rowColSum[vec2[i].first][vec2[i].second] > maxRowColSum) {
-                    maxRowColSum = rowColSum[vec2[i].first][vec2[i].second];
-                    flag3 = false;
-                    attacker.first = vec2[i].first;
-                    attacker.second = vec2[i].second;
-                }
-            }
-            if (flag3) { //행과 열의 값까지 겹치면
-                vector<pair<int, int>> vec3;
-                for (int i = 0; i < vec2.size(); i++) {
-                    if (rowColSum[vec2[i].first][vec2[i].second] == maxRowColSum) vec3.push_back({ vec2[i].first, vec2[i].second });
-                }
-                vec2.clear();
-                int maxCol = 0;
-                for (int i = 0; i < vec3.size(); i++) {
-                    if (maxCol < vec3[i].first) {
-                        maxCol = vec3[i].first;
-                        attacker.first = vec3[i].first;
-                        attacker.second = vec3[i].second;
-                    }
-                }
-            }
-        }
-    }
-    lastAttack[attacker.first][attacker.second] = turn;  //최종 선정된 공격자의 최근 공격턴 최신화 후 종료
-    board[attacker.first][attacker.second] += (N + M); //공격력 버프
+bool cmp(Turret a, Turret b) {
+    if (board[a.y][a.x] != board[b.y][b.x])return board[a.y][a.x] > board[b.y][b.x];
+    if (lastAttack[a.y][a.x] != lastAttack[b.y][b.x]) return lastAttack[a.y][a.x] < lastAttack[b.y][b.x];
+    if (a.sum != b.sum) return a.sum < b.sum;
+    return a.y < b.y;
 }
 
-void chooseTarget(int turn) { //공격자 선택 (공격력 가장 낮은 포탑)
-    int maxStat = 0;
-    bool flag = false; //minStat 최신화 될때마다 false로 리셋, 같은 공격력을 가지는 포탑이 있는지 체크
-    for (int i = 1; i <= N; i++) { //일단 최고 공격력만 체크(겹치는거 있는지랑)
-        for (int j = 1; j <= M; j++) {
-            if (board[i][j] == 0) continue; //죽은 포탑은 건너뛰기
-            if (maxStat == board[i][j]) flag = true;
-            else if (maxStat < board[i][j]) {
-                maxStat = board[i][j];
-                flag = false;
-                target.first = i; target.second = j;
-            }
-        }
-    }
-    if (flag) {  //공격력이 겹치는 포탑이 있는 경우
-        vector<pair<int, int>> vec;  //공격력 겹치는 포탑들 좌표 벡터
-        for (int i = 1; i <= N; i++) {  //공격력 겹치는 포탑들 벡터에 넣고
-            for (int j = 1; j <= M; j++) {
-                if (board[i][j] == 0) continue; //죽은 포탑은 건너뛰기
-                if (maxStat == board[i][j]) vec.push_back({ i,j });
-            }
-        }
-        int maxAttackTurn2 = 2100000000;  //공격한지 가장 오래된 포탑 구해야 하므로 공격턴 가장 작은 포탑 구하기
-        bool flag2 = false; //maxAttackTurn 같은거 있으면 true
-        for (int i = 0; i < vec.size(); i++) {
-            if (lastAttack[vec[i].first][vec[i].second] == maxAttackTurn2) {
-                flag2 = true;
-            }
-            else if (lastAttack[vec[i].first][vec[i].second] < maxAttackTurn2) {  //가장 최근에 공격한 포탑을 공격자로 선정
-                maxAttackTurn2 = lastAttack[vec[i].first][vec[i].second];
-                flag2 = false;
-                target.first = vec[i].first;
-                target.second = vec[i].second;
-            }
-        }
-        if (flag2) {  //가장 최근에 공격한 포탑이 겹친다면
-            vector<pair<int, int>> vec2;
-            for (int i = 0; i < vec.size(); i++) { //겹치는 포탑들 좌표 vec2에 넣고
-                if (maxAttackTurn2 == lastAttack[vec[i].first][vec[i].second]) vec2.push_back({ vec[i].first, vec[i].second });
-            }
-            vec.clear();
-            int minRowColSum = 2100000000;  //가장 작은거 찾기
-            bool flag3 = false;
-            for (int i = 0; i < vec2.size(); i++) {
-                if (rowColSum[vec2[i].first][vec2[i].second] == minRowColSum) flag3 = true;
-                else if (rowColSum[vec2[i].first][vec2[i].second] < minRowColSum) {
-                    minRowColSum = rowColSum[vec2[i].first][vec2[i].second];
-                    flag3 = false;
-                    target.first = vec2[i].first;
-                    target.second = vec2[i].second;
-                }
-            }
-            if (flag3) { //행과 열의 값까지 겹치면
-                vector<pair<int, int>> vec3;
-                for (int i = 0; i < vec2.size(); i++) {
-                    if (rowColSum[vec2[i].first][vec2[i].second] == minRowColSum) vec3.push_back({ vec2[i].first, vec2[i].second });
-                }
-                vec2.clear();
-                int minCol = 2100000000;
-                for (int i = 0; i < vec3.size(); i++) {
-                    if (minCol > vec3[i].first) {
-                        minCol = vec3[i].first;
-                        target.first = vec3[i].first;
-                        target.second = vec3[i].second;
-                    }
-                }
-            }
-        }
-    }
-    //lastAttack[target.first][attacker.second] = turn;  //최종 선정된 공격자의 최근 공격턴 최신화 후 종료
-    //board[attacker.first][attacker.second] += (N + M); //공격력 버프
-}
+
 bool laserAttack() {
     bool flag = false; //레이저 공격 가능한지
     queue<pair<int, int>> q;
@@ -264,9 +132,15 @@ void last() {
     }
 }
 void startTurn(int turn) {
-    chooseAttacker(turn);
+    sort(tV.begin(), tV.end(), cmp);
+    target.first = tV[0].y;
+    target.second = tV[0].x;
+    attacker.first = tV[tV.size() - 1].y;
+    attacker.second = tV[tV.size() - 1].x;
+    board[attacker.first][attacker.second] += (N + M);
+    lastAttack[attacker.first][attacker.second] = turn;
     //cout << turn << "번째 공격자 " << attacker.first << ", " << attacker.second << "\n";
-    chooseTarget(turn);
+
     //cout << turn << "번째 공격자 " << target.first << ", " << target.second << "\n";
     attack();
     last();
@@ -287,7 +161,11 @@ int main() {
     for (int i = 1; i <= N; i++) {
         for (int j = 1; j <= M; j++) {
             cin >> board[i][j];
-            rowColSum[i][j] = i + j;
+            if (board[i][j] != 0) {
+                Turret turret;
+                turret.y = i; turret.x = j; turret.sum = i + j;
+                tV.push_back(turret);
+            }
         }
     }
     for (int i = 1; i <= K; i++) {
