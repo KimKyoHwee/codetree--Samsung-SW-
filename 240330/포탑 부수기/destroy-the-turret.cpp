@@ -179,6 +179,16 @@ int main() {
         }
         */
         if (checkAliveMan) break;  //살아남은 포탑 1개면 종료
+        tV.clear();
+        for (int j = 1; j <= N; j++) {
+            for (int k = 1; k <= M; k++) {
+                if (board[i][j] != 0) {
+                    Turret turret;
+                    turret.y = i; turret.x = j; turret.sum = i + j;
+                    tV.push_back(turret);
+                }
+            }
+        }
     }
     cout << findStrongMan();
     return 0;
