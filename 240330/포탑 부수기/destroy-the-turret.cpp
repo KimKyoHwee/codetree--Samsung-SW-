@@ -99,7 +99,7 @@ void bombAttack() {
     board[y][x] -= board[attacker.first][attacker.second];
     if (board[y][x] < 0) board[y][x] = 0;
     for (int i = 0; i < 9; i++) {
-        int ny = y + bombY[i]; int nx = x + bombX[i];
+        int ny = (y + bombY[i]+N)%N; int nx = (x + bombX[i]+M)%M;
         if (ny == y && nx == x) continue; //공격받는 포탑 제외
         board[ny][nx] -= (board[attacker.first][attacker.second]) / 2;
         attacked[ny][nx] = true;
