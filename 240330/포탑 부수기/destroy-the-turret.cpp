@@ -54,7 +54,7 @@ bool laserAttack() {
             if (ny == 0) ny = N; 
             int nx = (x + moveX[i] + M) % M;
             if (nx == 0) nx = M;
-     
+            //cout << ny << ", " << nx << "\n";
             if (visited[ny][nx]) continue;  //이미 방문한곳 안감
             if (board[ny][nx] == 0) continue; //죽은포탑 못지나감
             
@@ -93,6 +93,7 @@ bool laserAttack() {
     return flag;
 }
 void bombAttack() {
+    //cout << "포탄공격\n";
     int y, x;
     y = target.first; x = target.second;
     attacked[attacker.first][attacker.second] = true;
@@ -103,6 +104,7 @@ void bombAttack() {
         int ny = (y + bombY[i]+N)%N; int nx = (x + bombX[i]+M)%M;
         if (ny == 0) ny = N; if (nx == 0) nx = M;
         if (ny == y && nx == x) continue; //공격받는 포탑 제외
+        if (ny == attacker.first && nx == attacker.second) continue;
         board[ny][nx] -= (board[attacker.first][attacker.second]) / 2;
         if (board[ny][nx] < 0) board[ny][nx] = 0;
         attacked[ny][nx] = true;
@@ -183,6 +185,16 @@ int main() {
                 }
             }
         }
+        /*
+        cout << i << "턴종료\n";
+        for (int j = 1; j <= N; j++) {
+            
+            for (int k = 1; k <= M; k++) {
+                cout << board[j][k] << " ";
+            }
+            cout << "\n";
+        }
+        */
         if (cnt <= 1) break;
     }
     cout << findStrongMan();
