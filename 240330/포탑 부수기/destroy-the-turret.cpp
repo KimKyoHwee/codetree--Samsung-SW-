@@ -25,21 +25,11 @@ struct Turret {
 };
 vector<Turret> tV;
 
-bool checkAliveMan() {
-    int cnt = 0;
-    for (int i = 1; i <= N; i++) {
-        for (int j = 1; j <= M; j++) {
-            if (board[i][j] > 0) cnt++;
-        }
-    }
-    return cnt ==1;
-}
-
 bool cmp(Turret a, Turret b) {
     if (board[a.y][a.x] != board[b.y][b.x])return board[a.y][a.x] > board[b.y][b.x];
     if (lastAttack[a.y][a.x] != lastAttack[b.y][b.x]) return lastAttack[a.y][a.x] < lastAttack[b.y][b.x];
     if (a.sum != b.sum) return a.sum < b.sum;
-    return a.y < b.y;
+    return a.x < b.x;
 }
 
 
@@ -52,6 +42,7 @@ bool laserAttack() {
         int y, x;
         pair<int, int> p = q.front(); q.pop();
         y = p.first; x = p.second;
+        
         if (y == target.first && x == target.second) {  //목적지도착
             flag = true;
             break;
@@ -59,8 +50,9 @@ bool laserAttack() {
  
         for (int i = 0; i < 4; i++) {
             int ny = (y + moveY[i] + N) % N;
+            if (ny == 0) ny = 6;
             int nx = (x + moveX[i] + M) % M;
-
+            if (nx == 0) nx = 6;
             if (visited[ny][nx]) continue;  //이미 방문한곳 안감
             if (board[ny][nx] == 0) continue; //죽은포탑 못지나감
             
@@ -68,9 +60,13 @@ bool laserAttack() {
             backY[ny][nx] = y;
             backX[ny][nx] = x;
             q.push({ ny, nx });
+            
         }
+ 
     }
+
     if (flag) {//만약 도달했으면
+  
         attacked[attacker.first][attacker.second] = true;
         int y, x;
         y = target.first; x = target.second;
@@ -78,6 +74,7 @@ bool laserAttack() {
         if (board[y][x] < 0) board[y][x] = 0;
         attacked[y][x] = true;
         attacked[attacker.first][attacker.second] = true;
+        
         while (1) {  //역추적 시작
             int ny = backY[y][x];
             int nx = backX[y][x];
@@ -87,6 +84,7 @@ bool laserAttack() {
             board[ny][nx] -= (board[attacker.first][attacker.second] / 2);
             if (board[ny][nx] < 0) board[ny][nx] = 0;
             attacked[ny][nx] = true;
+            y = ny; x = nx;
         }
     }
     return flag;
@@ -139,9 +137,6 @@ void startTurn(int turn) {
     attacker.second = tV[tV.size() - 1].x;
     board[attacker.first][attacker.second] += (N + M);
     lastAttack[attacker.first][attacker.second] = turn;
-    //cout << turn << "번째 공격자 " << attacker.first << ", " << attacker.second << "\n";
-
-    //cout << turn << "번째 공격자 " << target.first << ", " << target.second << "\n";
     attack();
     last();
 }
@@ -170,25 +165,20 @@ int main() {
     }
     for (int i = 1; i <= K; i++) {
         startTurn(i);
-        /*
-        for (int j = 1; j <= N; j++) {
-            for (int k = 1; k <= M; k++) {
-                cout << board[j][k] << " ";
-            }
-            cout << "\n";
-        }
-        */
-        if (checkAliveMan) break;  //살아남은 포탑 1개면 종료
+    
         tV.clear();
+        int cnt = 0;
         for (int j = 1; j <= N; j++) {
             for (int k = 1; k <= M; k++) {
-                if (board[i][j] != 0) {
+                if (board[j][k] != 0) {
+                    cnt++;
                     Turret turret;
-                    turret.y = i; turret.x = j; turret.sum = i + j;
+                    turret.y = j; turret.x = k; turret.sum = j + k;
                     tV.push_back(turret);
                 }
             }
         }
+        if (cnt <= 1) break;
     }
     cout << findStrongMan();
     return 0;
