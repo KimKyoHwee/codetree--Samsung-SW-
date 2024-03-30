@@ -49,10 +49,12 @@ bool laserAttack() {
         }
  
         for (int i = 0; i < 4; i++) {
+            
             int ny = (y + moveY[i] + N) % N;
-            if (ny == 0) ny = 6;
+            if (ny == 0) ny = N; 
             int nx = (x + moveX[i] + M) % M;
-            if (nx == 0) nx = 6;
+            if (nx == 0) nx = M;
+     
             if (visited[ny][nx]) continue;  //이미 방문한곳 안감
             if (board[ny][nx] == 0) continue; //죽은포탑 못지나감
             
@@ -66,7 +68,7 @@ bool laserAttack() {
     }
 
     if (flag) {//만약 도달했으면
-  
+ 
         attacked[attacker.first][attacker.second] = true;
         int y, x;
         y = target.first; x = target.second;
@@ -76,6 +78,7 @@ bool laserAttack() {
         attacked[attacker.first][attacker.second] = true;
         
         while (1) {  //역추적 시작
+            
             int ny = backY[y][x];
             int nx = backX[y][x];
             if (ny == attacker.first && nx == attacker.second) {  //역추적종료
@@ -98,8 +101,10 @@ void bombAttack() {
     if (board[y][x] < 0) board[y][x] = 0;
     for (int i = 0; i < 9; i++) {
         int ny = (y + bombY[i]+N)%N; int nx = (x + bombX[i]+M)%M;
+        if (ny == 0) ny = N; if (nx == 0) nx = M;
         if (ny == y && nx == x) continue; //공격받는 포탑 제외
         board[ny][nx] -= (board[attacker.first][attacker.second]) / 2;
+        if (board[ny][nx] < 0) board[ny][nx] = 0;
         attacked[ny][nx] = true;
     }
 }
